@@ -1,4 +1,4 @@
-import 'package:test_app/logic/point.dart';
+import 'package:test_app/logic/model/point.dart';
 
 class Polygon {
   List<Point> points = [];

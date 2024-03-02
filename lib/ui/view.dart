@@ -1,49 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:test_app/logic/point.dart';
+import 'package:test_app/logic/manager/view_model.dart';
+import 'package:test_app/logic/model/point.dart';
 
-import 'package:test_app/ui/history.dart';
-import 'package:test_app/ui/poligon.dart';
 import 'polygon_painter.dart';
-
-var historyProvider = StateProvider((ref) => History());
-var polygonProvider = StateProvider((ref) => Polygon());
-var newPointProvider = StateProvider<Offset?>((ref) => null);
 
 class PointsView extends ConsumerWidget {
   const PointsView({super.key});
 
-  void cancelEvent(WidgetRef ref) {
-    var event = ref.read(historyProvider.notifier).state.removeEvent();
+  void cancelEvent(WidgetRef ref) =>
+      ref.read(viewModelProvider.notifier).cancelEvent();
 
-    if (event is CreatePointEvent) {
-      ref.read(polygonProvider.notifier).state.removePoint();
-    }
-
-    var history = ref.read(historyProvider);
-    ref.read(historyProvider.notifier).state =
-        History.fromOld(history.events, history.removedEvents);
-  }
-
-  void returnEvent(WidgetRef ref) {
-    var event = ref.read(historyProvider.notifier).state.returnEvent();
-
-    if (event is CreatePointEvent) {
-      var pol = ref.read(polygonProvider.notifier).state;
-      pol.addPoint(event.point);
-      pol.checkOnClose();
-    }
-
-    var history = ref.read(historyProvider);
-    ref.read(historyProvider.notifier).state =
-        History.fromOld(history.events, history.removedEvents);
-  }
+  void returnEvent(WidgetRef ref) =>
+      ref.read(viewModelProvider.notifier).returnEvent();
 
   @override
   Widget build(BuildContext context, ref) {
-    var history = ref.watch(historyProvider);
-    var polygon = ref.watch(polygonProvider);
-    var newPoint = ref.watch(newPointProvider);
+    var viewModel = ref.watch(viewModelProvider);
 
     var decoration = BoxDecoration(
       color: Colors.white,
@@ -56,29 +29,20 @@ class PointsView extends ConsumerWidget {
         ),
         GestureDetector(
           onPanUpdate: (details) {
-            ref.read(newPointProvider.notifier).state = details.globalPosition;
+            var p = details.globalPosition;
+            ref.read(viewModelProvider.notifier).setNewPoint(Point(p.dx, p.dy));
           },
           onPanDown: (details) {
-            ref.read(newPointProvider.notifier).state = details.globalPosition;
+            var p = details.globalPosition;
+            ref.read(viewModelProvider.notifier).setNewPoint(Point(p.dx, p.dy));
           },
           onPanEnd: (details) {
-            var p = newPoint!;
-            var np = Point(p.dx, p.dy);
-
-            ref.read(polygonProvider.notifier).state.addPoint(np);
-            polygon.checkOnClose();
-
-            var history = ref.read(historyProvider);
-            history.addEvent(CreatePointEvent(np));
-            ref.read(historyProvider.notifier).state =
-                History.fromOld(history.events, history.removedEvents);
-
-            ref.read(newPointProvider.notifier).state = null;
+            ref.read(viewModelProvider.notifier).finishNewPointMovement();
           },
           child: Container(
             color: Colors.white.withAlpha(1),
             child: CustomPaint(
-              painter: PolygonPainter(polygon, newPoint),
+              painter: PolygonPainter(viewModel.polygon, viewModel.newPoint),
               child: Container(),
             ),
           ),
@@ -92,26 +56,27 @@ class PointsView extends ConsumerWidget {
                 children: [
                   ToolButton(
                       icon: const Icon(Icons.arrow_back),
-                      disabled: history.isEmpty,
+                      disabled: viewModel.canCancelEvent,
                       onPress: () => cancelEvent(ref)),
                   ToolButton(
                       icon: const Icon(Icons.arrow_forward),
-                      disabled: !history.canReturn,
+                      disabled: !viewModel.canReturnEvent,
                       onPress: () => returnEvent(ref)),
                 ],
               ),
               Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Container(
-                    decoration: decoration,
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(10),
-                    margin: const EdgeInsets.all(8),
-                    child: const Center(
-                        child:
-                            Text("Нажмите на экран для создания новой точки")),
-                  ),
+                  if (!viewModel.polygon.closed)
+                    Container(
+                      decoration: decoration,
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      margin: const EdgeInsets.all(8),
+                      child: const Center(
+                          child: Text(
+                              "Нажмите на экран для создания новой точки")),
+                    ),
                   Container(
                     width: double.infinity,
                     margin: const EdgeInsets.fromLTRB(8, 0, 8, 8),

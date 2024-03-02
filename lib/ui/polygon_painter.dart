@@ -1,8 +1,8 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:test_app/logic/point.dart';
-import 'package:test_app/ui/poligon.dart';
+import 'package:test_app/logic/model/point.dart';
+import 'package:test_app/logic/model/poligon.dart';
 
 class PolygonPainter extends CustomPainter {
   PolygonPainter(
@@ -10,7 +10,7 @@ class PolygonPainter extends CustomPainter {
     this.newPoint,
   );
   Polygon polygon;
-  Offset? newPoint;
+  Point? newPoint;
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
@@ -60,20 +60,21 @@ class PolygonPainter extends CustomPainter {
 
     if (newPoint != null) {
       canvas.drawOval(
-        Rect.fromCenter(center: newPoint!, width: 5, height: 5),
+        Rect.fromCenter(
+            center: Offset(newPoint!.x, newPoint!.y), width: 5, height: 5),
         Paint()..color = Colors.red,
       );
 
       if (polygon.points.isNotEmpty) {
         var p1 = polygon.points.last;
-        var p2 = Point(newPoint!.dx, newPoint!.dy);
-        canvas.drawLine(Offset(p1.x, p1.y), Offset(p2.x, p2.y), linesPaint);
+        canvas.drawLine(
+            Offset(p1.x, p1.y), Offset(newPoint!.x, newPoint!.y), linesPaint);
       }
     }
 
     var linesLengs = (newPoint == null) || polygon.points.isEmpty
         ? lines
-        : lines + [(polygon.points.last, Point(newPoint!.dx, newPoint!.dy))];
+        : lines + [(polygon.points.last, newPoint!)];
     // draw linesLengths
     const textStyle = TextStyle(
       color: Colors.black,

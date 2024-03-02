@@ -1,4 +1,4 @@
-import 'package:test_app/logic/point.dart';
+import 'package:test_app/logic/model/point.dart';
 
 abstract class HistoryEvent {}
 
@@ -16,9 +16,7 @@ class History {
 
   History addEvent(HistoryEvent event) {
     removedEvents.clear();
-
     events.add(event);
-    print(events);
     return this;
   }
 
